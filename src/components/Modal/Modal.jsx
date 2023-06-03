@@ -1,55 +1,53 @@
-import { Component } from 'react';
 import PropTypes from 'prop-types';
 import css from './Modal.module.css';
+import { useEffect, useRef } from 'react';
 
-class Modal extends Component {
-  static propTypes = {
-    selectedPhoto: PropTypes.object,
-    onClick: PropTypes.func.isRequired,
-  };
-
-  handleClick = () => {
-    const { onClick } = this.props;
+const Modal = ({ selectedPhoto, onClick }) => {
+  const handleClick = () => {
     const selectedPhoto = null;
     onClick(selectedPhoto);
   };
 
-  handleKeyDown = e => {
-    const { onClick } = this.props;
-    const selectedPhoto = null;
-    if (e.key === 'Escape') {
-      onClick(selectedPhoto);
-    }
-  };
+  const keyRef = useRef();
 
-  componentDidMount() {
-    document.addEventListener('keydown', this.handleKeyDown);
-  }
+  useEffect(() => {
+    const handleKeyDown = e => {
+      const selectedPhoto = null;
+      if (e.key === 'Escape') {
+        onClick(selectedPhoto);
+      }
+    };
 
-    componentWillUnmount() {
-    document.removeEventListener('keydown', this.handleKeyDown);
-  }
+    keyRef.current = handleKeyDown;
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClick]);
 
-  render() {
-    const { selectedPhoto } = this.props;
-    if (selectedPhoto !== null) {
-      return (
-        <div
-          className={css.overlay}
-          onClick={this.handleClick}
-          onKeyDown={this.handleKeyDown}
-        >
-          <div className={css.modal}>
-            <img
-              className={css.image}
-              src={selectedPhoto.largeImageURL}
-              alt={selectedPhoto.tags}
-            />
-          </div>
+  if (selectedPhoto !== null) {
+    return (
+      <div
+        className={css.overlay}
+        onClick={handleClick}
+        onKeyDown={keyRef.current}
+        tabIndex={0}
+      >
+        <div className={css.modal}>
+          <img
+            className={css.image}
+            src={selectedPhoto.largeImageURL}
+            alt={selectedPhoto.tags}
+          />
         </div>
-      );
-    }
+      </div>
+    );
   }
-}
+};
+
+Modal.propTypes = {
+  selectedPhoto: PropTypes.object,
+  onClick: PropTypes.func.isRequired,
+};
 
 export default Modal;

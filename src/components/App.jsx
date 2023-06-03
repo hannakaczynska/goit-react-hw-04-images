@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 
 //componenty:
@@ -10,77 +10,68 @@ import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
 
 axios.defaults.baseURL = 'https://pixabay.com/';
-const API_KEY = "35000498-2935018b21b8b3d2f50cbcb0f"
+const API_KEY = '35000498-2935018b21b8b3d2f50cbcb0f';
 
-export class App extends Component {
-  state = {
-    photos: [],
-    submitedValue: '',
-    numberOfPhotos: 0,
-    page: 1,
-    isLoading: false,
-    selectedPhoto: null,
+export const App = () => {
+
+  const [photos, setPhotos] = useState([]);
+  const [submitedValue, setSubmitedValue] = useState('');
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [numberOfPhotos, setNumberOfPhotos] = useState(0);
+
+  const handleSubmitedValue = value => {
+    setPhotos([]);
+    setSubmitedValue(value);
+    setNumberOfPhotos(0);
+    setPage(1);
   };
 
-  handleSubmitedValue = value => {
-    this.setState({
-      photos: [],
-      submitedValue: value,
-      numberOfPhotos: 0,
-      page: 1,
-    });
+  const increasePageNumber = step => {
+    setPage(prevState => prevState + step,
+    );
   };
 
-  increasePageNumber = step => {
-    this.setState(prevState => ({
-      page: prevState.page + step,
-    }));
+  const manageSelectedPhoto = selectedPhoto => {
+    setSelectedPhoto(selectedPhoto);
   };
 
-  manageSelectedPhoto = (selectedPhoto) => {
-    this.setState({selectedPhoto: selectedPhoto})
-  }
-
-  componentDidUpdate = async (prevProps, prevState) => {
-    const { submitedValue, page } = this.state;
-    if (submitedValue !== prevState.submitedValue || page !== prevState.page) {
-      this.setState({ isLoading: true });
+  useEffect(() => {
+    const fetchPhotos = async () => {
       try {
         const response = await axios.get(
           `api/?q=${submitedValue}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
         );
-        this.setState(prevState => ({
-          photos: [...prevState.photos, ...response.data.hits],
-        }));
+        setPhotos(prevState => [...prevState, ...response.data.hits]);
         if (page === 1) {
-          this.setState({
-            numberOfPhotos: response.data.totalHits,
-          });
+          setNumberOfPhotos(response.data.totalHits);
         }
       } catch (error) {
         console.log(error);
       } finally {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       }
+    };
+    if (submitedValue !== '') {
+      setIsLoading(true);
+      fetchPhotos();
     }
-  };
+  }, [submitedValue, page]);
 
-  render() {
-    const { photos, submitedValue, numberOfPhotos, page, isLoading, selectedPhoto } = this.state;
-    return (
-      <>
-        <Searchbar onSubmit={this.handleSubmitedValue} />
-        <main>
-          <Loader isLoading={isLoading} />
+  return (
+    <>
+      <Searchbar onSubmit={handleSubmitedValue} />
+      <main>
+        <Loader isLoading={isLoading} />
         <ImageGallery>
-            <ImageGalleryItem photos={photos} onClick={this.manageSelectedPhoto} />
+          <ImageGalleryItem photos={photos} onClick={manageSelectedPhoto} />
         </ImageGallery>
         {submitedValue !== '' && page * 12 <= numberOfPhotos ? (
-          <Button onClick={this.increasePageNumber} />
+          <Button onClick={increasePageNumber} />
           ) : null}
-          <Modal selectedPhoto={selectedPhoto} onClick={this.manageSelectedPhoto} />
-          </main>
-      </>
-    );
-  }
-}
+          <Modal selectedPhoto={selectedPhoto} onClick={manageSelectedPhoto} />
+      </main>
+    </>
+  );
+};
